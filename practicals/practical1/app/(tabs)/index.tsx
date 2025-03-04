@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,92 +7,145 @@ import {
   SafeAreaView,
   Image,
   Dimensions,
+  Modal,
 } from 'react-native';
+import { useRouter } from 'expo-router'; // Import useRouter
+import LanguagePopup from '../../components/LanguagePopup';
 
 const { width, height } = Dimensions.get('window');
 
-// Slide text data (image remains constant)
 const slides = [
   {
     id: '1',
-    text: 'Welcome to Gojek!',
-    description: "We're your go-to app for hassle-free commutes.",
+    image: require('../../assets/images/gojek1.png'),
+    title: 'Welcome to Gojek',
+    description: 'Get your groceries, food, and packages delivered to your doorstep.',
   },
   {
     id: '2',
-    text: 'Get going with us',
+    image: require('../../assets/images/gojek2.png'),
+    title: 'Get going with us',
     description: 'Use GoCar to get across town – from anywhere, at any time.',
   },
   {
     id: '3',
-    text: 'Rides for all',
+    image: require('../../assets/images/gojek3.png'),
+    title: 'Rides for all',
     description: 'Up to three stops with every trip – perfect for travel with friends and family.',
   },
 ];
 
-export default function WelcomeScreen() {
+export default function App() {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [showSplash, setShowSplash] = useState(true);
+  const [isLanguagePopupVisible, setIsLanguagePopupVisible] = useState(false);
+  const router = useRouter(); // Create a router instance
 
-  // Function to go to the next text slide when tapping
-  const goToNextSlide = () => {
+  useEffect(() => {
+    if (!showSplash) {
+      const interval = setInterval(() => {
+        setCurrentIndex((prevIndex) => (prevIndex + 1) % slides.length);
+      }, 4000); // Ensures every slide gets equal time
+
+      return () => clearInterval(interval);
+    }
+  }, [showSplash]);
+
+  const handleNextSlide = () => {
     setCurrentIndex((prevIndex) => (prevIndex + 1) % slides.length);
+  };
+
+  // Handle navigation to signup screen
+  const handleSignUpPress = () => {
+    router.push('/signup');
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Top Bar with Logo and Language Selection */}
-      <View style={styles.topBar}>
-        <Image source={require('../../assets/images/gojek-logo.png')} style={styles.logo} />
-        <TouchableOpacity style={styles.languageButton}>
-          <Text style={styles.languageText}>🌍 English</Text>
+      {showSplash ? (
+        <TouchableOpacity style={styles.splashContainer} onPress={() => setShowSplash(false)}>
+          <Image source={require('../../assets/images/gojek-logo.png')} style={styles.splashLogo} />
+          <Text style={styles.splashFooter}>from <Text style={styles.splashBrand}>goto</Text></Text>
         </TouchableOpacity>
-      </View>
+      ) : (
+        <>
+          <View style={styles.topBar}>
+            <Image source={require('../../assets/images/gojek-logo.png')} style={styles.logo} />
+            <TouchableOpacity style={styles.languageButton} onPress={() => setIsLanguagePopupVisible(true)}>
+              <Text style={styles.languageText}>🌍 English</Text>
+            </TouchableOpacity>
+          </View>
 
-      {/* Touchable area to change text */}
-      <TouchableOpacity style={styles.fullScreenTouchable} onPress={goToNextSlide}>
-        <View style={styles.content}>
-          {/* Static Image */}
-          <Image source={require('../../assets/images/gojek3.png')} style={styles.image} />
+          <TouchableOpacity style={styles.fullScreenTouchable} onPress={handleNextSlide}>
+            <View style={styles.content}>
+              <Image source={slides[currentIndex].image} style={styles.image} />
+              <Text style={styles.title}>{slides[currentIndex].title}</Text>
+              <Text style={styles.subtitle}>{slides[currentIndex].description}</Text>
+            </View>
+          </TouchableOpacity>
 
-          {/* Changing Text */}
-          <Text style={styles.title}>{slides[currentIndex].text}</Text>
-          <Text style={styles.subtitle}>{slides[currentIndex].description}</Text>
-        </View>
-      </TouchableOpacity>
+          <View style={styles.pagination}>
+            {slides.map((_, index) => (
+              <View key={index} style={[styles.dot, currentIndex === index && styles.activeDot]} />
+            ))}
+          </View>
 
-      {/* Pagination Dots */}
-      <View style={styles.pagination}>
-        {slides.map((_, index) => (
-          <View key={index} style={[styles.dot, currentIndex === index && styles.activeDot]} />
-        ))}
-      </View>
+          <TouchableOpacity style={styles.loginButton}>
+            <Text style={styles.loginText}>Log in</Text>
+          </TouchableOpacity>
 
-      {/* Buttons */}
-      <TouchableOpacity style={styles.loginButton}>
-        <Text style={styles.loginText}>Log in</Text>
-      </TouchableOpacity>
+          {/* Updated Signup Button with navigation */}
+          <TouchableOpacity style={styles.signupButton} onPress={handleSignUpPress}>
+            <Text style={styles.signupText}>I'm new, sign me up</Text>
+          </TouchableOpacity>
 
-      <TouchableOpacity style={styles.signupButton}>
-        <Text style={styles.signupText}>I'm new, sign me up</Text>
-      </TouchableOpacity>
-
-      {/* Footer */}
-      <Text style={styles.footerText}>
-        By logging in or registering, you agree to our{' '}
-        <Text style={styles.linkText}>Terms of service</Text> and{' '}
-        <Text style={styles.linkText}>Privacy policy</Text>.
-      </Text>
+          {/* Language Popup Modal */}
+          <Modal
+            transparent
+            animationType="slide"
+            visible={isLanguagePopupVisible}
+            onRequestClose={() => setIsLanguagePopupVisible(false)}
+          >
+            <LanguagePopup 
+              visible={isLanguagePopupVisible} 
+              selectedLanguage="English" 
+              onSelectLanguage={(language) => console.log(language)} 
+              onClose={() => setIsLanguagePopupVisible(false)} 
+            />
+          </Modal>
+        </>
+      )}
     </SafeAreaView>
   );
 }
 
-// Styles
 const styles = StyleSheet.create({
-  container: {
+  splashContainer: {
     flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#fff',
-    padding: 20,
+  },
+  splashLogo: {
+    width: 150,
+    height: 150,
+    resizeMode: 'contain',
+  },
+  splashFooter: {
+    position: 'absolute',
+    bottom: 50,
+    fontSize: 16,
+    color: '#666',
+  },
+  splashBrand: {
+    fontWeight: 'bold',
+    color: 'green',
+  },
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
   },
   topBar: {
     flexDirection: 'row',
@@ -100,11 +153,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     paddingHorizontal: 20,
-    marginBottom: 30,
+    marginBottom: 20,
   },
   logo: {
-    width: 300,
-    height: 100,
+    width: 200,
+    height: 90,
     resizeMode: 'contain',
   },
   languageButton: {
@@ -112,7 +165,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   languageText: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: 'bold',
     color: '#333',
   },
@@ -127,7 +180,7 @@ const styles = StyleSheet.create({
   },
   image: {
     width: '80%',
-    height: height * 0.3, // Matches the given screenshot
+    height: height * 0.3,
     resizeMode: 'contain',
     marginBottom: 20,
   },
@@ -185,16 +238,4 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-  footerText: {
-    marginTop: 20,
-    fontSize: 12,
-    color: '#666',
-    textAlign: 'center',
-    paddingHorizontal: 20,
-  },
-  linkText: {
-    color: '#008000',
-    fontWeight: 'bold',
-  },
 });
-
